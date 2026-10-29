@@ -62,24 +62,83 @@ class DeviceTestResult {
 }
 ```
 
-## Canonical recipe
+## One screen per test (required)
+
+Every test runs in its own host-built screen (`Check<Test>Screen`). The screen
+owns the controller: create it, subscribe **before** `checkStart()`, react to
+`REQUIRES_USER_ACTION`, and `checkDispose()` in `dispose()`.
 
 ```dart
-final controller = sdk.device.checkGps();
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:rg_bridge/rg_bridge.dart';
 
-final sub = controller.getResultStream.listen((result) {
-  if (!result.status.isTerminal) {
-    setState(() => _intermediate = result);
-    return;
+class CheckGpsScreen extends StatefulWidget {
+  const CheckGpsScreen({super.key, required this.sdk});
+  final RGBridge sdk;
+
+  @override
+  State<CheckGpsScreen> createState() => _CheckGpsScreenState();
+}
+
+class _CheckGpsScreenState extends State<CheckGpsScreen> {
+  late final _controller = widget.sdk.device.checkGps();
+  StreamSubscription<DeviceTestResult>? _sub;
+  DeviceTestResult? _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _sub = _controller.getResultStream.listen((result) {
+      if (!mounted) return;
+      setState(() => _result = result);
+    });
+    _controller.checkStart();
   }
-  setState(() => _result = result);
-});
 
-await controller.checkStart();
-// dispose: await sub.cancel(); controller.checkDispose();
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _controller.checkDispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final result = _result;
+    if (result != null && !result.status.isTerminal) {
+      return const Center(child: Text('Waiting for user action...'));
+    }
+    return Center(child: Text(result?.status.wire ?? 'Running...'));
+  }
+}
 ```
 
 Never `await` a result from `checkStart`. Results only arrive on the stream.
+
+### Screen per test
+
+| Test id | Screen | Built with | Terminal trigger |
+|---|---|---|---|
+| `touchscreen` | `CheckTouchscreenScreen` | **`CheckTouchscreenWidget` (mandatory)** | `onCheckFinished` |
+| `camera` | `CheckCameraScreen` | **`CheckCameraWidget` (mandatory)** | `onCheckFinished` |
+| `accelerometer` | `CheckAccelerometerScreen` | host UI + controller | auto PASS after 3 axes move |
+| `gyroscope` | `CheckGyroscopeScreen` | host UI + controller | auto PASS after 3 axes move |
+| `biometric` | `CheckBiometricScreen` | host UI + "Authenticate" button | `checkStart()` |
+| `bluetooth` | `CheckBluetoothScreen` | host UI + status + "Enable" button | `checkNotifyAdapterState` / `checkRequestEnable` |
+| `wifi` | `CheckWifiScreen` | host UI + SSID list + "Enable" button | `checkNotifyScan` / `checkRequestEnable` |
+| `gps` | `CheckGpsScreen` | host UI + coordinates/status | `checkNotifyPosition` or default provider |
+| `speaker` | `CheckSpeakerScreen` | host UI + guess buttons 1–4 | `checkVerifyGuess` |
+| `vibration` | `CheckVibrationScreen` | host UI + guess buttons 1–4 | `checkVerifyGuess` |
+| `speech` | `CheckSpeechScreen` | host UI + target number + transcript | `checkFinishFromTranscript` / `checkNotifyTranscript` |
+| `microphone` | `CheckMicrophoneScreen` | host UI + target number + transcript | `checkFinishFromTranscript` / `checkNotifyTranscript` |
+| `flashlight` | `CheckFlashlightScreen` | host UI + Yes/No | `checkVerifySeen` |
+| `navigation_button` | `CheckNavigationButtonScreen` | host UI + `PopScope` + `WidgetsBindingObserver` | `checkNotifyBack/Home/Recent` |
+| `power` | `CheckPowerScreen` | host UI instructions | `checkNotifyScreenOff/On` |
+| `volume_button` | `CheckVolumeButtonScreen` | host UI instructions | `checkNotifyKey` / `checkNotifyButtonEvent` |
+
+Only camera and touchscreen must use a library widget. For every other row the
+host writes the screen UI and calls the controller notifiers.
 
 ## Test matrix
 
@@ -105,6 +164,10 @@ Never `await` a result from `checkStart`. Results only arrive on the stream.
 All controllers expose `getResultStream`, `getIsFinished`, `checkSkip()`,
 `checkDispose()`. `checkStart()` returns `Future<void>`, `Future<int>` (target),
 or `void` depending on the test (see notes below).
+
+`Camera` and `Touchscreen` rows exist for completeness only: their supported
+flow is the library widget, not a bare controller. See
+[One screen per test](#one-screen-per-test-required).
 
 ## Per-test notes
 
@@ -133,11 +196,34 @@ final moved = c.getMovedAxes;   // {'x', 'z'}
 `getTranscript` or `onCheckTranscript`. Evaluate early with
 `checkFinishFromTranscript()`.
 
-### Camera
+### Camera (mandatory widget)
 
-`await checkStart()` initializes, captures, measures file size, deletes the temp
-file. PASS if capture > 0 bytes. Rear camera can flag flash with
-`checkNotifyFlashAnswer(bool)`.
+`CheckCameraWidget` is **required** for the camera test. The host only routes
+to it and reads the result; the widget owns the flow (init → preview → 3 s
+countdown → capture → size validation → rear-camera flash question).
+
+```dart
+final result = await Navigator.of(context).push<DeviceTestResult>(
+  MaterialPageRoute(
+    builder: (_) => CheckCameraWidget(
+      checkIsFront: false,
+      initTimeout: const Duration(seconds: 15),
+      onCheckFinished: (r) => Navigator.of(context).pop(r),
+    ),
+  ),
+);
+```
+
+Do not rebuild this UI with `CameraPreview`, and do not drive the camera test
+through `checkCamera()` when the widget is available. Controller-only runs are
+headless: they capture and delete a temp file without the preview/countdown
+contract, so they do not satisfy this test.
+
+If the host's `rg_bridge` version does not export `CheckCameraWidget` from the
+barrel yet, importing
+`package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart` is
+the only allowed `src/` exception. Record it as temporary and upgrade instead of
+copying the widget.
 
 ### Flashlight
 
@@ -182,9 +268,10 @@ Simulate with `checkNotifyKey(24|25)` or
 `checkStart()` is `void`. PASS on detected off → on. Simulate with
 `checkNotifyScreenOff()` then `checkNotifyScreenOn()`.
 
-### Navigation button
+### Navigation button (host-built screen)
 
-`checkStart()` is `void`. Sequence Back → Home → Recent. Host must wire:
+The library ships no navigation screen. `checkStart()` is `void`. The host's
+`CheckNavigationButtonScreen` must wire the sequence Back → Home → Recent:
 
 - `PopScope(canPop: false)` to detect Back;
 - `WidgetsBindingObserver` lifecycle to detect Home/Recent;
@@ -208,7 +295,9 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
 }
 ```
 
-### Touchscreen widget
+### Touchscreen (mandatory widget)
+
+`CheckTouchscreenWidget` is **required** for the touchscreen test.
 
 ```dart
 final result = await Navigator.of(context).push<DeviceTestResult>(
@@ -224,7 +313,9 @@ final result = await Navigator.of(context).push<DeviceTestResult>(
 );
 ```
 
-The widget owns its controller (starts in `initState`, disposes automatically).
+The widget owns its controller (starts in `initState`, disposes automatically)
+and reports coverage. Do not re-implement the grid/tracker, and do not run
+`checkTouchscreen()` without this widget.
 
 ## Simulation (emulator / desktop)
 
@@ -237,7 +328,7 @@ The widget owns its controller (starts in `initState`, disposes automatically).
 | Bluetooth | `checkNotifyAdapterState('on')` |
 | Speaker / Vibration | `checkVerifyGuess(n)` |
 | Speech / Mic | `checkNotifyTranscript('angka 456')` |
-| Camera | `checkNotifyCaptured(1024)` |
+| Camera | Widget flow only; `checkNotifyCaptured(1024)` exists solely for headless controller runs |
 | Flashlight | `checkVerifySeen(true)` |
 | Power | `checkNotifyScreenOff()` + `checkNotifyScreenOn()` |
 | Volume | `checkNotifyKey(24)` |
@@ -252,3 +343,10 @@ The widget owns its controller (starts in `initState`, disposes automatically).
 - Forgetting `checkDispose()` leaves timers/streams alive.
 - Listening twice to a broadcast stream is fine only with a stored
   subscription; avoid duplicate listeners per widget rebuild.
+- Re-implementing the camera or touchscreen UI instead of using
+  `CheckCameraWidget` / `CheckTouchscreenWidget` — not an accepted result for
+  those tests.
+- Running `camera` / `touchscreen` controller-only — the widget flow is
+  mandatory.
+- Sharing one controller across two tests or two screens — one screen, one
+  controller.

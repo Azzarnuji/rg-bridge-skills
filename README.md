@@ -11,7 +11,8 @@ flutter pub add rg_bridge
 It teaches coding agents how to:
 
 - initialize one `RGBridge` instance and manage its lifecycle;
-- run the 16 hardware tests and handle `DeviceTestResult` / `REQUIRES_USER_ACTION`;
+- run the 16 hardware tests, each from its own screen, and handle
+  `DeviceTestResult` / `REQUIRES_USER_ACTION`;
 - build the WebView session + JS bridge flow;
 - submit forms, create desk inboxes, and receive take-photo files over QR;
 - handle permissions and debug platform limitations.
@@ -69,7 +70,10 @@ It does not distribute the package itself.
 
 Key rules the skill enforces:
 
-- public barrel import only (`package:rg_bridge/rg_bridge.dart`);
+- one host-built screen per hardware test; `camera` and `touchscreen` must use
+  `CheckCameraWidget` / `CheckTouchscreenWidget` instead of custom UI;
+- public barrel import only (`package:rg_bridge/rg_bridge.dart`), except the
+  documented temporary `CheckCameraWidget` import for older package versions;
 - one SDK instance per app;
 - subscribe to `getResultStream` before `checkStart()`;
 - treat `REQUIRES_USER_ACTION` as intermediate;

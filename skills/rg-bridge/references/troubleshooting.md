@@ -24,6 +24,9 @@ Some older README snippets do not match the code. Use these signatures:
 | UI does not update | No `setState` in listener | Update state on result/progress |
 | Timer keeps running | Not stopped on terminal | Stop UI timer on terminal result |
 | `Stream has already been listened to` | Multiple listeners | Keep one stored subscription |
+| Camera test run without preview/countdown | Controller-only run | Use `CheckCameraWidget` |
+| Touchscreen result from a custom grid | Re-implemented UI | Use `CheckTouchscreenWidget` |
+| Two tests share one controller | Controller reused across screens | One screen, one controller |
 
 ## WebView
 

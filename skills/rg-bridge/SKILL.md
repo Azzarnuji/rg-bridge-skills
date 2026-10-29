@@ -1,6 +1,6 @@
 ---
 name: rg-bridge
-description: Use when integrating or debugging the rg_bridge Flutter SDK (RGBridge) — device info, 16 hardware tests (touchscreen, sensors, camera, mic, GPS, WiFi, Bluetooth, biometric, buttons), the WebView JS bridge, form submission, desk inbox, and QR take-photo file transfer. Covers initialization, controller lifecycle, result streams, REQUIRES_USER_ACTION, permissions, and troubleshooting.
+description: Use when integrating or debugging the rg_bridge Flutter SDK (RGBridge) — device info, 16 hardware tests (touchscreen, sensors, camera, mic, GPS, WiFi, Bluetooth, biometric, buttons), the WebView JS bridge, form submission, desk inbox, and QR take-photo file transfer. Covers initialization, one-screen-per-test structure, the mandatory camera/touchscreen library widgets, controller lifecycle, result streams, REQUIRES_USER_ACTION, permissions, and troubleshooting.
 ---
 
 # RGBridge Flutter SDK
@@ -31,7 +31,8 @@ Do not use for unrelated Flutter plugin work.
 ## Non-negotiable rules
 
 1. Import only the public barrel: `package:rg_bridge/rg_bridge.dart`.
-   Never import `package:rg_bridge/src/...` from app code.
+   Never import `package:rg_bridge/src/...` from app code — except the
+   documented `CheckCameraWidget` fallback in rule 10.
 2. Create **one** `RGBridge` instance for the app (or per service), not one per
    screen.
 3. Hardware results arrive only through `controller.getResultStream`.
@@ -46,6 +47,17 @@ Do not use for unrelated Flutter plugin work.
    placeholders / `String.fromEnvironment`.
 8. The legacy README shows outdated WebView signatures. Trust this skill and
    the source (`lib/src/addons/...`) over old docs.
+9. Every hardware test runs in its **own host-built screen**
+   (`Check<Test>Screen`). The screen owns creation, subscription, start, and
+   dispose of its controller. The only exception to host-built screens is
+   `camera` and `touchscreen`: both **must** render the library widgets
+   `CheckCameraWidget` / `CheckTouchscreenWidget` — never re-implement their
+   UI and never run those two tests controller-only.
+10. `CheckCameraWidget` must come from the barrel. If the host's `rg_bridge`
+   version predates its export, importing
+   `package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart`
+   is the single allowed `src/` exception; record it as temporary and upgrade
+   the package instead of copying the widget.
 
 ## Install and initialize
 
@@ -70,26 +82,91 @@ final sdk = RGBridge(
 Device-only code may omit `baseUrl`. WebView, Form, Desk, and QR require a
 valid `baseUrl` + `clientId`.
 
-## Canonical device-test recipe
+## Device-test screens (required)
+
+Every test gets its own screen. The host builds the screen (route, layout,
+buttons); the screen owns the controller lifecycle.
 
 ```dart
-final controller = sdk.device.checkWifi();
+// import 'dart:async';
+// import 'package:rg_bridge/rg_bridge.dart';
+class CheckWifiScreen extends StatefulWidget {
+  const CheckWifiScreen({super.key, required this.sdk});
+  final RGBridge sdk;
 
-final sub = controller.getResultStream.listen((result) {
-  if (!result.status.isTerminal) {
-    // REQUIRES_USER_ACTION — show instructions, keep waiting.
-    return;
+  @override
+  State<CheckWifiScreen> createState() => _CheckWifiScreenState();
+}
+
+class _CheckWifiScreenState extends State<CheckWifiScreen> {
+  late final _controller = widget.sdk.device.checkWifi();
+  StreamSubscription<DeviceTestResult>? _sub;
+  DeviceTestResult? _result;
+
+  @override
+  void initState() {
+    super.initState();
+    // Subscribe BEFORE start.
+    _sub = _controller.getResultStream.listen((result) {
+      if (!mounted) return;
+      if (!result.status.isTerminal) {
+        // REQUIRES_USER_ACTION — show instructions, keep waiting.
+        setState(() => _result = result);
+        return;
+      }
+      setState(() => _result = result);
+    });
+    _controller.checkStart(); // fire-and-forget; never await a result.
   }
-  // PASS / FAILED / SKIPPED / NOT_SUPPORTED
-  print('${result.test}: ${result.status.wire}');
-});
 
-await controller.checkStart();
-
-// on screen dispose:
-await sub.cancel();
-controller.checkDispose();
+  @override
+  void dispose() {
+    _sub?.cancel();
+    _controller.checkDispose();
+    super.dispose();
+  }
+  // build(): host UI + notifiers, e.g. checkRequestEnable/checkNotifyScan.
+}
 ```
+
+### Library widgets (mandatory for camera & touchscreen)
+
+| Widget | Test | Rule |
+|---|---|---|
+| `CheckCameraWidget` | `camera` | **Mandatory.** Host pushes it as a route. |
+| `CheckTouchscreenWidget` | `touchscreen` | **Mandatory.** Host pushes it as a route. |
+| `TakePhotoQrWidget` | QR photo | QR surface, not a hardware test. |
+
+All other tests are **host-built screens**: the host writes the UI and calls the
+controller notifiers (`checkVerifyGuess`, `checkNotify*`, ...).
+`navigation_button` is host-built as well (`PopScope` +
+`WidgetsBindingObserver`); the library ships no navigation screen.
+
+```dart
+// camera — do not rebuild this UI yourself
+final result = await Navigator.of(context).push<DeviceTestResult>(
+  MaterialPageRoute(
+    builder: (_) => CheckCameraWidget(
+      checkIsFront: false,
+      onCheckFinished: (r) => Navigator.of(context).pop(r),
+    ),
+  ),
+);
+
+// touchscreen — do not rebuild this UI yourself
+final result = await Navigator.of(context).push<DeviceTestResult>(
+  MaterialPageRoute(
+    builder: (_) => CheckTouchscreenWidget(
+      columns: 15,
+      rows: 26,
+      timeout: const Duration(seconds: 60),
+      onCheckFinished: (r) => Navigator.of(context).pop(r),
+    ),
+  ),
+);
+```
+
+The per-test screen table lives in `references/device-tests.md`.
 
 Status wire values: `PASS`, `FAILED`, `SKIPPED`, `NOT_SUPPORTED`,
 `REQUIRES_USER_ACTION`. `DeviceTestStatus.isTerminal` excludes the last one.
@@ -172,7 +249,7 @@ Read the matching file before writing non-trivial code:
 | Topic | File |
 |---|---|
 | Requirements, install, init, lifecycle, platform setup | `references/quickstart.md` |
-| All `get*` info APIs and the 16 `check*` tests with getters/notifiers | `references/device-tests.md` |
+| All `get*` info APIs, the 16 `check*` tests, the required screen-per-test table, and the mandatory camera/touchscreen widgets | `references/device-tests.md` |
 | WebView API, events, channels, HTML loading, permissions | `references/webview.md` |
 | Form model contract, desk inbox, QR streams and teardown | `references/form-desk-qr.md` |
 | Errors, emulator/iOS limitations, debug checklist | `references/troubleshooting.md` |

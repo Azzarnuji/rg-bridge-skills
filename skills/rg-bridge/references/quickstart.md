@@ -42,9 +42,19 @@ flutter pub get
 import 'package:rg_bridge/rg_bridge.dart';
 ```
 
-The barrel exports `RGBridge`, enums, models, and `CheckTouchscreenWidget`.
+The barrel exports `RGBridge`, enums, models, and the widgets
+`CheckTouchscreenWidget`, `TakePhotoQrWidget`, and — when the installed version
+includes it — `CheckCameraWidget`.
 Controller types are used through `sdk.device.*`; they do not need separate
-imports. Never import `src/`.
+imports.
+
+Never import `src/`, with one documented exception: if the host's `rg_bridge`
+version does not export `CheckCameraWidget` yet, import
+`package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart`
+temporarily and upgrade the package instead of copying the widget.
+
+Every hardware test runs in its own host-built screen. `camera` and
+`touchscreen` are the exception: they must use the library widgets above.
 
 ## Initialize
 
@@ -118,6 +128,10 @@ iOS `ios/Runner/Info.plist`:
 lib/
 ├── sdk/rgbridge_service.dart
 ├── features/device_check/
+│   ├── check_wifi_screen.dart        # one screen per test
+│   ├── check_camera_screen.dart      # renders CheckCameraWidget
+│   ├── check_touchscreen_screen.dart # renders CheckTouchscreenWidget
+│   └── ...
 ├── features/webview/
 ├── features/form/
 └── main.dart
