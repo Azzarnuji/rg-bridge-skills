@@ -2,6 +2,12 @@
 
 Agent skill for integrating the **`rg_bridge`** Flutter SDK (`RGBridge`).
 
+Package: https://pub.dev/packages/rg_bridge
+
+```bash
+flutter pub add rg_bridge
+```
+
 It teaches coding agents how to:
 
 - initialize one `RGBridge` instance and manage its lifecycle;

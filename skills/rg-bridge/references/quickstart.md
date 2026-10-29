@@ -11,6 +11,12 @@
 
 ## Dependency
 
+Published on pub.dev: https://pub.dev/packages/rg_bridge
+
+```bash
+flutter pub add rg_bridge
+```
+
 ```yaml
 dependencies:
   rg_bridge: ^0.1.1
