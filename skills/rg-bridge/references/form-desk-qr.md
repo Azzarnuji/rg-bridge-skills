@@ -89,12 +89,34 @@ Do not rewrite the signed URL; treat `url` and `token` as sensitive.
 ## QR take-photo
 
 ```dart
-final info = await sdk.qr.photo.show(maxFiles: 5);
+// Device labels MUST come from the library — never hardcode them.
+final display = await sdk.device.getDeviceDisplayInfo();
+
+final info = await sdk.qr.photo.show(
+  deviceName: display.deviceName,
+  deviceDetail: display.deviceDetail,
+);
 ```
 
-`QRUseCaseModelType { url, transferSessionId?, expiresAt? }`.
-`show()` initializes the backend session (`type: 'take-photo'`,
-`channel: 'browser'`, `meta.max_files`) and connects the host receiver.
+`getDeviceDisplayInfo()` returns `CheckDeviceDisplayInfo { deviceName,
+deviceDetail }`, derived from device info + storage (e.g. `samsung SM-A525F`
+and `116 GB • Android`). This is the only accepted source for the take-photo
+device card.
+
+`show()` posts `type: 'take-photo'`, `channel: 'browser'`, optional
+`session_id`, and `meta.device_name` / `meta.device_detail`, then connects the
+host receiver.
+
+- `deviceName` / `deviceDetail` — from `getDeviceDisplayInfo()`, not literals.
+- `sessionId` — optional UUID to reactivate an old session; omit for a new one.
+- Never send `meta.max_files`, `meta.session_code`, or `meta.photo_steps`; the
+  server decides photo count (default 6) and step labels.
+
+`QRUseCaseModelType { url, transferSessionId?, sessionId?, sessionCode?,
+photoSteps, maxFiles?, expiresAt? }`. `sessionCode`, `photoSteps`, and
+`maxFiles` come from the server — never compute them in Flutter.
+
+HTTP 422 throws `HttpValidationException`; show `e.fieldMessage`.
 
 Display the QR:
 
@@ -122,8 +144,8 @@ Streams:
 `FileTransferHostStatus`: `idle`, `connecting`, `connected`, `receiving`,
 `completed`, `failed`, `cancelled`, `expired`, `sessionClosed`, `disposed`.
 
-`sessionClosed` means the web closed the session (for example, `maxFiles`
-reached); `qrUrl` is cleared.
+`sessionClosed` means the web closed the session (for example, the server's
+photo limit was reached); `qrUrl` is cleared.
 
 Example:
 
@@ -178,9 +200,15 @@ class _TakePhotoPageState extends State<TakePhotoPage> {
       _files.clear();
     });
     try {
-      final info = await _sdk.qr.photo.show(maxFiles: 5);
+      final display = await _sdk.device.getDeviceDisplayInfo();
+      final info = await _sdk.qr.photo.show(
+        deviceName: display.deviceName,
+        deviceDetail: display.deviceDetail,
+      );
       if (!mounted) return;
       setState(() => _session = info);
+    } on HttpValidationException catch (e) {
+      if (mounted) setState(() => _error = e.fieldMessage);
     } catch (e) {
       if (mounted) setState(() => _error = '$e');
     }
@@ -197,6 +225,12 @@ class _TakePhotoPageState extends State<TakePhotoPage> {
           if (_error != null) Text('ERROR: $_error'),
           if (_status != null) Text('status: ${_status!.name}'),
           if (_session != null) ...[
+            if (_session!.sessionCode != null)
+              Text('Kode sesi: ${_session!.sessionCode}'),
+            Text(
+              'Foto diminta: ${_session!.maxFiles ?? _session!.photoSteps.length}',
+            ),
+            for (final step in _session!.photoSteps) Text('• $step'),
             Center(child: _sdk.qr.photo.buildQr(size: 220)),
             SelectableText(_session!.url),
           ],
@@ -230,5 +264,6 @@ class _TakePhotoPageState extends State<TakePhotoPage> {
 | `morphable_id` mismatch | Must use the `initFormSubmission` token |
 | Inbox URL expired | `ttlHours` elapsed |
 | QR blank | `buildQr` before `show()` |
-| No files received | QR not scanned / pusher failed / `maxFiles` reached |
+| HTTP 422 on `show()` | Invalid field — catch `HttpValidationException` and show `fieldMessage` |
+| No files received | QR not scanned / pusher failed / server photo limit reached |
 | Stream error after close | Using the photo use-case after `dispose()` |

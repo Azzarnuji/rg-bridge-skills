@@ -20,10 +20,26 @@ final stable = await sdk.device.getDeviceInfo(includeStableId: true);
 ```
 
 `CheckDeviceInfo`: `brand`, `model`, `osName`, `osVersion`, `sdkInt`,
-`isPhysicalDevice`, `deviceId` (random UUID per install), `stableId`
-(`androidId` / `identifierForVendor`, only when requested).
+`isPhysicalDevice`, `deviceId`, `stableId` (`androidId` /
+`identifierForVendor`, only when requested).
+
+`deviceId` is a fresh random UUID on **every** `getDeviceInfo()` call — do not
+persist it as an installation id. Use `stableId` (opt-in) when you need a value
+that survives calls.
 
 `getDeviceInfo` never throws; plugin failures fall back to `Platform.*`.
+
+For UI labels (e.g. the take-photo "Perangkat" card) use the library helper
+instead of hardcoding:
+
+```dart
+final display = await sdk.device.getDeviceDisplayInfo();
+// display.deviceName   → 'samsung SM-A525F'
+// display.deviceDetail → '116 GB • Android'
+```
+
+`CheckDeviceDisplayInfo { deviceName, deviceDetail }` is derived from device
+info + storage.
 
 ```dart
 final battery = await sdk.device.getBatteryInfo(); // null if unsupported

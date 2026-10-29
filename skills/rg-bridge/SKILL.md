@@ -58,6 +58,12 @@ Do not use for unrelated Flutter plugin work.
    `package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart`
    is the single allowed `src/` exception; record it as temporary and upgrade
    the package instead of copying the widget.
+11. QR take-photo device labels must be read from the library:
+   `await sdk.device.getDeviceDisplayInfo()` then pass `deviceName` /
+   `deviceDetail` to `sdk.qr.photo.show(...)`. Never hardcode a device name or
+   detail (no `'Apple iPhone 13'`, no `'128 GB • Purple'`) and never invent the
+   photo count — `sessionCode`, `photoSteps`, and `maxFiles` come from the
+   server response.
 
 ## Install and initialize
 
@@ -235,9 +241,14 @@ final inbox = await sdk.desk.createCustomerInbox(
   memberCode: '0001', ttlHours: 24,
 );
 
-// QR take-photo
-final info = await sdk.qr.photo.show(maxFiles: 5);
+// QR take-photo — device label from the library, never hardcoded
+final display = await sdk.device.getDeviceDisplayInfo();
+final info = await sdk.qr.photo.show(
+  deviceName: display.deviceName,
+  deviceDetail: display.deviceDetail,
+);
 sdk.qr.photo.onFileReceived.listen((file) { /* ReceivedFile */ });
+// info.sessionCode, info.photoSteps, info.maxFiles (from server)
 // widget: sdk.qr.photo.buildQr(size: 220)
 // or: TakePhotoQrWidget(url: info.url, size: 220)
 ```
