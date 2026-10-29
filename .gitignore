@@ -1,0 +1,20 @@
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.idea/
+.vscode/
+*.iml
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-error.log*
+
+# Local agent installs (do not commit generated links)
+.agents/skills/
+.claude/skills/
+.opencode/skill/
+skills-lock.json
