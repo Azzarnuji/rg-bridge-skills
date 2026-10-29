@@ -162,6 +162,7 @@ final inbox = await sdk.desk.createCustomerInbox(
 final info = await sdk.qr.photo.show(maxFiles: 5);
 sdk.qr.photo.onFileReceived.listen((file) { /* ReceivedFile */ });
 // widget: sdk.qr.photo.buildQr(size: 220)
+// or: TakePhotoQrWidget(url: info.url, size: 220)
 ```
 
 ## Reference routing

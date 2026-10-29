@@ -103,6 +103,8 @@ sdk.qr.photo.buildQr(size: 220); // only after show()
 final url = sdk.qr.photo.qrUrl;
 ```
 
+Or render the exported widget: `TakePhotoQrWidget(url: info.url, size: 220)`.
+
 The QR contains the URL only, never `host_token`.
 
 Streams:
