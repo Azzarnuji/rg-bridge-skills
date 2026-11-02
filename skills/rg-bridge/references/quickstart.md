@@ -12,17 +12,16 @@
 ## Dependency
 
 `rg_bridge` is distributed from the private GitLab pub registry, not pub.dev.
-Get the registry URL from the maintainer and export it as `RG_PUB_HOSTED_URL`.
+Get the registry URL and secret token from the maintainer.
 
-Authenticate once with a GitLab personal access token that has `read_api`
-scope:
+First, register the registry and paste the secret token when prompted:
 
 ```bash
-dart pub token add "$RG_PUB_HOSTED_URL"
+dart pub token add <PRIVATE_PUB_HOSTED_URL>
+# Paste the secret token when prompted
 ```
 
-Add the dependency, replacing `<PRIVATE_PUB_HOSTED_URL>` with the registry
-URL from the maintainer:
+Then add the dependency:
 
 ```yaml
 dependencies:

@@ -68,14 +68,16 @@ Do not use for unrelated Flutter plugin work.
 ## Install and initialize
 
 `rg_bridge` is distributed from the private GitLab pub registry, not pub.dev.
-The registry URL is not published here; get it from the maintainer and export it
-as `RG_PUB_HOSTED_URL` (the same value replaces `<PRIVATE_PUB_HOSTED_URL>`).
+Get the registry URL and secret token from the maintainer.
 
-Authenticate once (GitLab personal access token with `read_api` scope):
+First, store the token for the registry (paste the secret token when prompted):
 
 ```bash
-dart pub token add "$RG_PUB_HOSTED_URL"
+dart pub token add <PRIVATE_PUB_HOSTED_URL>
+# Paste the secret token when prompted
 ```
+
+Then add the dependency:
 
 ```yaml
 dependencies:

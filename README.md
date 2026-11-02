@@ -2,12 +2,16 @@
 
 Agent skill for integrating the **`rg_bridge`** Flutter SDK (`RGBridge`).
 
-Package: private GitLab pub registry (ask the maintainer for the hosted URL).
+Package: private GitLab pub registry (ask the maintainer for the hosted URL and secret token).
+
+First, register the registry and paste the secret token when prompted:
 
 ```bash
-# Authenticate once (GitLab personal access token with read_api scope)
-dart pub token add "$RG_PUB_HOSTED_URL"
+dart pub token add <PRIVATE_PUB_HOSTED_URL>
+# Paste the secret token when prompted
 ```
+
+Then add the dependency:
 
 ```yaml
 dependencies:
