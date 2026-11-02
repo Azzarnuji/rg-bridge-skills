@@ -11,25 +11,24 @@
 
 ## Dependency
 
-Published on pub.dev: https://pub.dev/packages/rg_bridge
+`rg_bridge` is distributed from the private GitLab pub registry, not pub.dev.
+Get the registry URL from the maintainer and export it as `RG_PUB_HOSTED_URL`.
+
+Authenticate once with a GitLab personal access token that has `read_api`
+scope:
 
 ```bash
-flutter pub add rg_bridge
+dart pub token add "$RG_PUB_HOSTED_URL"
 ```
 
-```yaml
-dependencies:
-  rg_bridge: ^0.1.1
-```
-
-Internal Git source:
+Add the dependency, replacing `<PRIVATE_PUB_HOSTED_URL>` with the registry
+URL from the maintainer:
 
 ```yaml
 dependencies:
   rg_bridge:
-    git:
-      url: https://git.stechindonesia.co.id/raja-gadai/rg_bridge.git
-      ref: main
+    hosted: <PRIVATE_PUB_HOSTED_URL>
+    version: ^0.1.5
 ```
 
 ```bash

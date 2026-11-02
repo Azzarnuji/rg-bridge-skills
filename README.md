@@ -2,10 +2,18 @@
 
 Agent skill for integrating the **`rg_bridge`** Flutter SDK (`RGBridge`).
 
-Package: https://pub.dev/packages/rg_bridge
+Package: private GitLab pub registry (ask the maintainer for the hosted URL).
 
 ```bash
-flutter pub add rg_bridge
+# Authenticate once (GitLab personal access token with read_api scope)
+dart pub token add "$RG_PUB_HOSTED_URL"
+```
+
+```yaml
+dependencies:
+  rg_bridge:
+    hosted: <PRIVATE_PUB_HOSTED_URL>
+    version: ^0.1.5
 ```
 
 It teaches coding agents how to:
