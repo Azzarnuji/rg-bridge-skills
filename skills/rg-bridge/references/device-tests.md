@@ -298,9 +298,20 @@ uses a generic biometric prompt that accepts any enrolled biometric.
 
 ### Volume button
 
-`checkStart()` is `void`. Native plugin intercepts the keycode on Android.
+`checkStart()` is `void`. Subscribe to `getResultStream` before `checkStart()`.
 Simulate with `checkNotifyKey(24|25)` or
 `checkNotifyButtonEvent(CheckButtonEvent.fromJson({...}))`.
+
+- **Android** — the native plugin intercepts the volume keycode; the device
+  volume does not change.
+- **iOS** — there is no public keycode API. The plugin observes
+  `AVAudioSession.outputVolume` and uses a hidden `MPVolumeView`; the device
+  volume changes briefly and is then restored. iOS only reports a change when
+  the volume actually moves, so at 0% (DOWN) or 100% (UP) the plugin first
+  normalizes the volume to 25%/75%. Wait about 0.5 s after `checkStart()`
+  before pressing. If normalization fails, the result is `FAILED` with a clear
+  message instead of a 30 s timeout. Must run on a physical iPhone —
+  `MPVolumeView` cannot change volume in the Simulator.
 
 `CheckButtonEvent` constants: `checkKeyVolumeUp = 24`,
 `checkKeyVolumeDown = 25`, names `VOLUME_UP`, `VOLUME_DOWN`, `POWER`, `HOME`,
@@ -310,6 +321,11 @@ Simulate with `checkNotifyKey(24|25)` or
 
 `checkStart()` is `void`. PASS on detected off → on. Simulate with
 `checkNotifyScreenOff()` then `checkNotifyScreenOn()`.
+
+- **Android** — real power-key detection.
+- **iOS** — no public power keycode. PASS uses lock/unlock notifications
+  (`screen_off` → `screen_on`). Auto-lock or switching apps can also trigger
+  `screen_off`, so follow the instruction and test on a physical iPhone.
 
 ### Navigation button (host-built screen)
 

@@ -80,7 +80,10 @@ Some older README snippets do not match the code. Use these signatures:
 | iPhone Wi-Fi toggle is on but test FAILED | iOS cannot read radio state alone; connect to a Wi-Fi network |
 | iOS Bluetooth settings button seems to do nothing | It opens app Settings, not the Bluetooth pane; user navigates manually |
 | Bluetooth test FAILED on iPhone although earbuds are connected | Test checks the adapter, not connections. Add `NSBluetoothAlwaysUsageDescription` and enable the app in Settings > Privacy & Security > Bluetooth; reinstall if the prompt never appeared |
-| Button test fails on iOS | Native button interception is a stub on iOS |
+| Volume button test on iOS Simulator | Expected: `MPVolumeView` cannot change volume in the Simulator. Use a physical iPhone |
+| Volume DOWN never detected at 0% / UP at 100% on iPhone | Upgrade `rg_bridge`: the SDK normalizes volume to 25%/75%. A `FAILED` normalization message means the volume could not be changed (Simulator or an unsupported audio route) |
+| Button test fails on iOS | Volume/power are supported on iOS via public APIs; navigation button remains `NOT_SUPPORTED`. Run on a physical iPhone |
+| iOS power PASS without pressing power | Expected heuristic: auto-lock or switching apps also emits `screen_off`. Disable auto-lock during the test and follow the on-screen instruction |
 | Emulator lacks sensors | Use simulation notifiers |
 
 ## Debug checklist

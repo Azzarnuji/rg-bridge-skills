@@ -294,6 +294,7 @@ flutter analyze
 flutter test        # if tests exist
 ```
 
-Hardware behavior must be verified on a physical Android device. Emulators and
-desktop need the simulation notifiers documented in
-`references/device-tests.md`.
+Hardware behavior must be verified on a physical Android or iOS device.
+iOS volume/power use public APIs but still need a real iPhone; the Simulator
+cannot change volume through `MPVolumeView`. Emulators and desktop targets
+need the simulation notifiers documented in `references/device-tests.md`.

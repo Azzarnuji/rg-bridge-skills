@@ -7,7 +7,7 @@
 | Dart SDK | `^3.12.2` |
 | Flutter | `>=1.17.0` (use current stable) |
 | Android | Physical device strongly recommended |
-| iOS | Some native channels are stubs → `NOT_SUPPORTED` |
+| iOS | Volume/power supported via public APIs; Wi-Fi scan/navigation stubs → `NOT_SUPPORTED` |
 
 ## Dependency
 
@@ -177,7 +177,7 @@ lib/
 ## First-run checklist
 
 1. `flutter pub get`
-2. Run on a physical Android device.
+2. Run on a physical Android or iOS device (iOS volume/power need a real iPhone).
 3. `getDeviceInfo()` returns brand/model.
 4. One test stream emits a terminal result.
 5. Only then wire WebView/Form with a valid `baseUrl` + `clientId`.
