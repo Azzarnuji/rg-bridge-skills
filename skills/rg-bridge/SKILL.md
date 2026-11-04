@@ -58,14 +58,18 @@ Do not use for unrelated Flutter plugin work.
    `package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart`
    is the single allowed `src/` exception; record it as temporary and upgrade
    the package instead of copying the widget.
-11. iOS setup is host-only: put **all seven** usage descriptions in the host
+11. All device controller types are exported by the barrel, so typed controller
+    variables may be used directly after importing
+    `package:rg_bridge/rg_bridge.dart`. Never import controller files from
+    `package:rg_bridge/src/...`.
+12. iOS setup is host-only: put **all seven** usage descriptions in the host
     app `ios/Runner/Info.plist` — `NSCameraUsageDescription`,
     `NSMicrophoneUsageDescription`, `NSSpeechRecognitionUsageDescription`,
     `NSFaceIDUsageDescription`, `NSLocationWhenInUseUsageDescription`,
     `NSMotionUsageDescription`, `NSBluetoothAlwaysUsageDescription`. iOS does
     not merge package plists; a missing motion/Bluetooth key crashes the app.
     On Android, `MainActivity` must extend `FlutterFragmentActivity`.
-12. QR take-photo device labels must be read from the library:
+13. QR take-photo device labels must be read from the library:
    `await sdk.device.getDeviceDisplayInfo()` then pass `deviceName` /
    `deviceDetail` to `sdk.qr.photo.show(...)`. Never hardcode a device name or
    detail (no `'Apple iPhone 13'`, no `'128 GB • Purple'`) and never invent the

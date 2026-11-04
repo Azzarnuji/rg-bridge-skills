@@ -43,8 +43,17 @@ import 'package:rg_bridge/rg_bridge.dart';
 The barrel exports `RGBridge`, enums, models, and the widgets
 `CheckTouchscreenWidget`, `TakePhotoQrWidget`, and — when the installed version
 includes it — `CheckCameraWidget`.
-Controller types are used through `sdk.device.*`; they do not need separate
-imports.
+All device controller types are exported by the public barrel, so they can be
+used for explicit typing without separate imports:
+
+```dart
+import 'package:rg_bridge/rg_bridge.dart';
+
+late final CheckGpsController controller;
+```
+
+Controller types are also returned through `sdk.device.*`; do not import their
+files directly.
 
 Never import `src/`, with one documented exception: if the host's `rg_bridge`
 version does not export `CheckCameraWidget` yet, import
