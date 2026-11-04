@@ -165,7 +165,7 @@ host writes the screen UI and calls the controller notifiers.
 | Gyroscope | `sampleStream?` | 15 s | `getMovedAxes`, `getLastSample` | `checkNotifySample`, `checkMarkNotSupported` |
 | Biometric | `mode`, `canCheck?`, `isSupported?`, `authenticate?` | 30 s | `getModeName` | — |
 | Bluetooth | — | 20 s | `getLastState` | `checkNotifyAdapterState`, `checkRequestEnable` |
-| WiFi | — | 20 s | `getNetworks` | `checkNotifyScan`, `checkRequestEnable` |
+| WiFi | — | 10 s | `getNetworks` | `checkNotifyScan`, `checkRequestEnable` |
 | GPS | `requestPosition?` | 30 s | — | `checkNotifyPosition` |
 | Camera | `checkIsFront`, `initialize?`, `captureFileSize?` | init 15 s | — | `checkNotifyCaptured`, `checkNotifyFlashAnswer` |
 | Speaker | `random?` | 20 s | `getTargetCount` | `checkVerifyGuess` |
@@ -250,8 +250,32 @@ turns the torch off.
 ### WiFi / Bluetooth
 
 `await checkStart()`. WiFi PASS when enabled (SSID list in data / `getNetworks`,
-max 8). Bluetooth PASS when the adapter is on (`getLastState`).
+max 8). On Android the test reads `WifiManager.isWifiEnabled`, so the radio
+being on is enough — it does not need to be connected to a network, and no SSID
+is required. Bluetooth PASS when the adapter is on (`getLastState`).
 `await checkRequestEnable()` opens system settings.
+
+iOS has **no public Wi-Fi scan API**. `getWifiNetworks` returns `null` by design,
+so `checkStart()` does not start a timer: it emits `REQUIRES_USER_ACTION` with
+`action.type == 'connect_wifi'`. The host shows the instruction, then calls
+`checkRequestEnable()` — it opens app Settings and starts passive verification.
+The controller polls `connectivity_plus` + `network_info_plus` every 2 s for
+10 s: PASS once the device is connected to a Wi-Fi network (SSID may be empty →
+`ssidCount: 0`), FAILED on timeout. iOS cannot read the radio state alone, so
+Wi-Fi `on` without an active connection still fails. The current SSID additionally needs the
+`com.apple.developer.networking.wifi-info` entitlement plus precise location
+authorization; it is always `null` on the simulator. Listing nearby SSIDs
+requires Apple's `NEHotspotHelper` entitlement (manual approval), and Wi-Fi
+cannot be toggled programmatically. Returning to the app after Settings without
+a connection fails immediately (`FAILED`), rather than waiting for the 10 s
+timeout.
+
+Bluetooth only checks the adapter state (no scanning), timeout 20 s. iOS
+`checkRequestEnable()` opens app Settings — the `App-Prefs:` Bluetooth deep
+link is blocked — so the user navigates manually. Returning without the adapter
+on fails immediately, like Wi-Fi. `NSBluetoothAlwaysUsageDescription` is
+mandatory: the SDK creates `CBCentralManager` at registration, so a missing key
+can crash at startup.
 
 ### GPS
 
@@ -267,7 +291,10 @@ domain.
 ### Biometric
 
 `await checkStart()`. PASS on successful system authentication; no hardware →
-`NOT_SUPPORTED`. iOS requires `NSFaceIDUsageDescription`.
+`NOT_SUPPORTED`. iOS requires `NSFaceIDUsageDescription`. Android requires
+`MainActivity : FlutterFragmentActivity` (permissions merge automatically).
+`mode` (`checkFace` / `checkFingerprint`) is only a Dart-side label — native
+uses a generic biometric prompt that accepts any enrolled biometric.
 
 ### Volume button
 

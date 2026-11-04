@@ -71,8 +71,15 @@ Some older README snippets do not match the code. Use these signatures:
 | Symptom | Fix |
 |---|---|
 | `minSdkVersion` error | Raise host `minSdk` |
-| iOS never asks for permission | Add the `Info.plist` keys |
+| iOS never asks for permission | Add all seven host `Info.plist` keys from `quickstart.md` (camera, mic, speech, Face ID, location, motion, Bluetooth) |
+| iOS app crashes on sensor/Bluetooth test | Missing `NSMotionUsageDescription` / `NSBluetoothAlwaysUsageDescription` |
+| Biometric fails `NotFragmentActivity` on Android | `MainActivity` must extend `FlutterFragmentActivity` |
 | `MissingPluginException` | `flutter clean` + rebuild; non-fatal in the SDK |
+| iOS Wi-Fi list is empty / `checkStart` waits for user action | Expected: no scan API. Connect to Wi-Fi, then call `checkRequestEnable()` |
+| Android Wi-Fi PASS with `ssidCount: 0` | Expected: radio `on` is enough, no connection or SSID required |
+| iPhone Wi-Fi toggle is on but test FAILED | iOS cannot read radio state alone; connect to a Wi-Fi network |
+| iOS Bluetooth settings button seems to do nothing | It opens app Settings, not the Bluetooth pane; user navigates manually |
+| Bluetooth test FAILED on iPhone although earbuds are connected | Test checks the adapter, not connections. Add `NSBluetoothAlwaysUsageDescription` and enable the app in Settings > Privacy & Security > Bluetooth; reinstall if the prompt never appeared |
 | Button test fails on iOS | Native button interception is a stub on iOS |
 | Emulator lacks sensors | Use simulation notifiers |
 

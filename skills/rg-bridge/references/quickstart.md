@@ -103,22 +103,61 @@ Create RGBridge
 
 ## Platform setup
 
-Android permissions are merged from the package manifest: Bluetooth,
-Bluetooth scan/connect, location, WiFi state, camera, record audio, vibrate.
-Do not copy them manually.
+### Android
 
-iOS `ios/Runner/Info.plist`:
+Permissions are merged from the package manifest: Bluetooth, Bluetooth
+scan/connect, location, WiFi state, camera, record audio, vibrate,
+`USE_BIOMETRIC`, `USE_FINGERPRINT`. Do not copy them manually.
+
+Biometric also requires the host `MainActivity` to extend
+`FlutterFragmentActivity`. `FlutterActivity` makes `authenticate()` fail with
+`NotFragmentActivity` even when permissions are present.
+
+```kotlin
+import io.flutter.embedding.android.FlutterFragmentActivity
+
+class MainActivity : FlutterFragmentActivity()
+```
+
+### iOS — mandatory `Info.plist` keys
+
+Add **all seven** keys to the **host app** `ios/Runner/Info.plist`. There is no
+manifest merge on iOS: keys in a package/pod `Info.plist` are ignored, so the
+SDK cannot inject them. Add every key even if the app does not expose the test
+yet — native plugins initialize at startup and a missing description can crash
+the app.
+
+| Key | Feature | Notes |
+|---|---|---|
+| `NSCameraUsageDescription` | camera, QR take-photo, WebView camera | |
+| `NSMicrophoneUsageDescription` | microphone, speech, WebView mic | |
+| `NSSpeechRecognitionUsageDescription` | speech (`speech_to_text`) | |
+| `NSFaceIDUsageDescription` | biometric (`local_auth`) | Face ID is denied without it |
+| `NSLocationWhenInUseUsageDescription` | GPS (`geolocator`) | |
+| `NSMotionUsageDescription` | accelerometer / gyroscope (`sensors_plus`) | **Crashes** on motion access if missing |
+| `NSBluetoothAlwaysUsageDescription` | bluetooth (`flutter_blue_plus` + native `CBCentralManager`) | **Crashes** on iOS 13+ if missing |
 
 ```xml
 <key>NSCameraUsageDescription</key>
-<string>Camera is used for the camera test and photo capture.</string>
+<string>Camera is used for the camera test and QR photo capture.</string>
 <key>NSMicrophoneUsageDescription</key>
-<string>Microphone is used for microphone and speech tests.</string>
+<string>Microphone is used for the microphone and speech tests.</string>
 <key>NSSpeechRecognitionUsageDescription</key>
-<string>Speech recognition is used for the microphone test.</string>
+<string>Speech recognition is used for the speech-to-text test.</string>
 <key>NSFaceIDUsageDescription</key>
 <string>Face ID is used for the biometric test.</string>
+<key>NSLocationWhenInUseUsageDescription</key>
+<string>Location is used for the GPS test.</string>
+<key>NSMotionUsageDescription</key>
+<string>Motion data is used for the accelerometer and gyroscope tests.</string>
+<key>NSBluetoothAlwaysUsageDescription</key>
+<string>Bluetooth is used for the Bluetooth adapter test.</string>
 ```
+
+For iOS 12 and below also add `NSBluetoothPeripheralUsageDescription`. Add
+`NSLocationAlwaysAndWhenInUseUsageDescription` only if the app actually needs
+background location. WiFi SSID also needs the Access WiFi Information
+entitlement, not an `Info.plist` key.
 
 ## Suggested structure
 
