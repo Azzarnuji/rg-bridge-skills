@@ -40,7 +40,8 @@ flutter pub get
 import 'package:rg_bridge/rg_bridge.dart';
 ```
 
-The barrel exports `RGBridge`, enums, models, and the widgets
+The barrel exports `RGBridge`, enums, models, localization
+(`RgBridgeLocale`, `RgBridgeI18n`, `RgBridgeStrings`), and the widgets
 `CheckTouchscreenWidget`, `TakePhotoQrWidget`, and — when the installed version
 includes it — `CheckCameraWidget`.
 All device controller types are exported by the public barrel, so they can be
@@ -72,7 +73,7 @@ final sdk = RGBridge(
 );
 ```
 
-`RGBridge({String baseUrl = '', required String clientId})`.
+`RGBridge({String baseUrl = '', required String clientId, RgBridgeLocale locale = RgBridgeLocale.id})`.
 
 Recommended service wrapper:
 
@@ -90,6 +91,48 @@ class RGBridgeService {
 ```
 
 One instance per app. Do not construct `RGBridge` inside every screen.
+
+## Localization
+
+User-facing SDK text supports Indonesian (default) and English.
+
+```dart
+final sdk = RGBridge(
+  baseUrl: 'https://api.example.com',
+  clientId: 'rg_your_client_id',
+  locale: RgBridgeLocale.en, // default: RgBridgeLocale.id
+);
+```
+
+Change it at runtime, for example when the host app language changes:
+
+```dart
+RgBridgeI18n.configure(locale: RgBridgeLocale.id);
+```
+
+What is localized:
+
+- `DeviceTestResult.message` and `DeviceTestAction.message`;
+- camera, touchscreen, and QR widget labels;
+- the biometric `localizedReason` fallback (only when the host did not pass
+  one);
+- STT recognition locale (`id_ID` for Indonesian, `en_US` for English), subject
+  to the languages installed on the device.
+
+What does **not** change:
+
+- `DeviceTestStatus` and `status.wire`;
+- status tokens and any status prefix inside `message`;
+- `testId`, `action.type`, and JSON keys.
+
+Locale is global. `RGBridge(locale:)` calls `RgBridgeI18n.configure(...)`, so
+the last constructed `RGBridge` wins. Keep one SDK instance per app instead of
+creating instances with different locales. Library widgets rebuild through
+`RgBridgeI18n.localeNotifier` when the locale changes.
+
+Host app logic must branch on `result.status`, never on the localized
+`message`. Configure before starting a controller: changing the locale mid-test
+only affects messages emitted after the change.
 
 ## Lifecycle
 
@@ -189,4 +232,6 @@ lib/
 2. Run on a physical Android or iOS device (iOS volume/power need a real iPhone).
 3. `getDeviceInfo()` returns brand/model.
 4. One test stream emits a terminal result.
-5. Only then wire WebView/Form with a valid `baseUrl` + `clientId`.
+5. A result `message` uses the expected locale while `status.wire` stays
+   `PASS` / `FAILED` / ... .
+6. Only then wire WebView/Form with a valid `baseUrl` + `clientId`.

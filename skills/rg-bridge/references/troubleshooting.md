@@ -86,6 +86,16 @@ Some older README snippets do not match the code. Use these signatures:
 | iOS power PASS without pressing power | Expected heuristic: auto-lock or switching apps also emits `screen_off`. Disable auto-lock during the test and follow the on-screen instruction |
 | Emulator lacks sensors | Use simulation notifiers |
 
+## Localization
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| Messages/labels stay Indonesian | Default locale is `id` | Pass `locale: RgBridgeLocale.en` to `RGBridge` or call `RgBridgeI18n.configure(...)` |
+| Locale changes unexpectedly | Global state; the last constructed `RGBridge` wins | Keep one SDK instance per app |
+| Message text changes but app logic breaks | Code parsed the localized `message` | Branch on `result.status` / `status.wire`; `testId` and `action.type` are stable |
+| Status text appears translated | Host translated the prefix/token | Keep `PASS` / `FAILED` / `SKIPPED` / `NOT_SUPPORTED` / `REQUIRES_USER_ACTION` verbatim; only descriptive text is localized |
+| Speech test recognizes the wrong language | STT follows the SDK locale | Set the intended locale; verify the device has that speech language installed |
+
 ## Debug checklist
 
 1. Is there exactly one `RGBridge` instance?
@@ -97,7 +107,9 @@ Some older README snippets do not match the code. Use these signatures:
 7. Are OS permissions granted?
 8. Are session tokens unexpired?
 9. Does the log contain `HTTP <code>`?
-10. Does the package version match the docs?
+10. Is the SDK locale the intended one, and is app logic using `status` instead
+    of localized `message`?
+11. Does the package version match the docs?
 
 ## Version sources
 

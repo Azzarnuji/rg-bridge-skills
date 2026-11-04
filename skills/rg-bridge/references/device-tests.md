@@ -78,6 +78,20 @@ class DeviceTestResult {
 }
 ```
 
+`status` is the stable machine contract. `message` is user-facing and localized
+(Indonesian by default, English via `locale: RgBridgeLocale.en`), so never use
+it for branching or persist it as an enum. The status wire values, any status
+prefix in `message` (`PASS - ...`), `testId`, and `action.type` are not
+translated. `DeviceTestAction.message` is localized like
+`DeviceTestResult.message`.
+
+```dart
+if (result.status.isTerminal) {
+  report(result.status.wire); // PASS / FAILED / ...
+  show(result.message ?? result.status.wire); // localized text
+}
+```
+
 ## One screen per test (required)
 
 Every test runs in its own host-built screen (`Check<Test>Screen`). The screen
@@ -409,3 +423,5 @@ and reports coverage. Do not re-implement the grid/tracker, and do not run
   mandatory.
 - Sharing one controller across two tests or two screens — one screen, one
   controller.
+- Parsing `result.message` for logic. It is localized; branch on
+  `result.status` / `status.wire` instead.

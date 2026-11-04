@@ -23,6 +23,8 @@ dependencies:
 It teaches coding agents how to:
 
 - initialize one `RGBridge` instance and manage its lifecycle;
+- localize SDK text with Indonesian (default) or English via
+  `RGBridge(locale: RgBridgeLocale.en)` / `RgBridgeI18n.configure(...)`;
 - run the 16 hardware tests, each from its own screen, and handle
   `DeviceTestResult` / `REQUIRES_USER_ACTION`;
 - build the WebView session + JS bridge flow;
@@ -89,6 +91,8 @@ Key rules the skill enforces:
 - one SDK instance per app;
 - subscribe to `getResultStream` before `checkStart()`;
 - treat `REQUIRES_USER_ACTION` as intermediate;
+- branch on `result.status` / `status.wire`, never on localized `message`;
+  status tokens and `testId` / `action.type` are not translated;
 - dispose controllers and unregister WebView events;
 - never commit real `clientId` values or log tokens/PII.
 

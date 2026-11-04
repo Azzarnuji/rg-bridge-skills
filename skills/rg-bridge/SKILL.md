@@ -1,6 +1,6 @@
 ---
 name: rg-bridge
-description: Use when integrating or debugging the rg_bridge Flutter SDK (RGBridge) — device info, 16 hardware tests (touchscreen, sensors, camera, mic, GPS, WiFi, Bluetooth, biometric, buttons), the WebView JS bridge, form submission, desk inbox, and QR take-photo file transfer. Covers initialization, one-screen-per-test structure, the mandatory camera/touchscreen library widgets, controller lifecycle, result streams, REQUIRES_USER_ACTION, permissions, and troubleshooting.
+description: Use when integrating or debugging the rg_bridge Flutter SDK (RGBridge) — device info, 16 hardware tests (touchscreen, sensors, camera, mic, GPS, WiFi, Bluetooth, biometric, buttons), the WebView JS bridge, form submission, desk inbox, and QR take-photo file transfer. Covers initialization, Indonesian/English localization (RgBridgeLocale), one-screen-per-test structure, the mandatory camera/touchscreen library widgets, controller lifecycle, result streams, REQUIRES_USER_ACTION, permissions, and troubleshooting.
 ---
 
 # RGBridge Flutter SDK
@@ -22,6 +22,7 @@ Use for any task that:
 
 - adds `rg_bridge` to a Flutter app, or initializes `RGBridge(...)`;
 - runs a hardware capability test and needs result handling;
+- localizes SDK text to Indonesian/English or switches language at runtime;
 - builds a WebView flow backed by an rg_bridge session;
 - submits an rg_bridge form, creates a desk inbox, or starts a take-photo QR;
 - debugs `NOT_SUPPORTED`, timeouts, missing events, or dispose issues.
@@ -75,6 +76,12 @@ Do not use for unrelated Flutter plugin work.
    detail (no `'Apple iPhone 13'`, no `'128 GB • Purple'`) and never invent the
    photo count — `sessionCode`, `photoSteps`, and `maxFiles` come from the
    server response.
+14. Treat `result.status` / `status.wire` as the machine contract. Localization
+   changes only user-facing descriptive text. Status tokens (`PASS`, `FAILED`,
+   `SKIPPED`, `NOT_SUPPORTED`, `REQUIRES_USER_ACTION`) and any status prefix in
+   `message` are **never translated**; `testId` and `action.type` stay
+   untranslated too. Never parse the localized `message` for app logic — use
+   `status`.
 
 ## Install and initialize
 
@@ -110,6 +117,42 @@ final sdk = RGBridge(
 
 Device-only code may omit `baseUrl`. WebView, Form, Desk, and QR require a
 valid `baseUrl` + `clientId`.
+
+## Localization (Indonesian / English)
+
+SDK text is Indonesian by default. English is opt-in at construction:
+
+```dart
+final sdk = RGBridge(
+  baseUrl: 'https://api.example.com',
+  clientId: 'rg_your_client_id',
+  locale: RgBridgeLocale.en, // default: RgBridgeLocale.id
+);
+```
+
+Switch at runtime with the exported i18n API:
+
+```dart
+RgBridgeI18n.configure(locale: RgBridgeLocale.id);
+```
+
+Coverage: device result/action messages, camera/touchscreen/QR widget labels,
+the biometric prompt, and the STT recognition locale (`id_ID` / `en_US`).
+Locale is **global** — `RGBridge(locale:)` calls `RgBridgeI18n.configure(...)`,
+so the last constructed `RGBridge` wins. Do not create multiple SDK instances
+with different locales.
+
+Localization does not change the wire contract:
+
+- `result.status` stays `passed` / `failed` / `skipped` / `notSupported` /
+  `requiresUserAction`; `status.wire` stays `PASS` / `FAILED` / `SKIPPED` /
+  `NOT_SUPPORTED` / `REQUIRES_USER_ACTION`.
+- When a `message` carries a status prefix (`PASS - ...`), that prefix remains
+  the same English token in both locales.
+- `testId`, `action.type`, and JSON keys are never translated.
+
+Never derive state by parsing `message`; read `status`, `testId`, and
+`action.type`.
 
 ## Device-test screens (required)
 
@@ -199,6 +242,8 @@ The per-test screen table lives in `references/device-tests.md`.
 
 Status wire values: `PASS`, `FAILED`, `SKIPPED`, `NOT_SUPPORTED`,
 `REQUIRES_USER_ACTION`. `DeviceTestStatus.isTerminal` excludes the last one.
+The wire values and any status prefix in `message` are not localized; only the
+descriptive text is. Use `status`, not `message`, for branching.
 
 Test ids: `touchscreen`, `accelerometer`, `gyroscope`, `biometric`,
 `bluetooth`, `wifi`, `gps`, `camera`, `speaker`, `vibration`, `speech`,
