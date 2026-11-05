@@ -22,7 +22,7 @@ dependencies:
 
 It teaches coding agents how to:
 
-- initialize one `RGBridge` instance and manage its lifecycle;
+- initialize the singleton `RGBridge` instance;
 - localize SDK text with Indonesian (default) or English via
   `RGBridge(locale: RgBridgeLocale.en)` / `RgBridgeI18n.configure(...)`;
 - run the 16 hardware tests, each from its own screen, and handle
@@ -30,6 +30,8 @@ It teaches coding agents how to:
 - build the WebView session + JS bridge flow;
 - submit forms, create desk inboxes, and receive take-photo files over QR;
 - handle permissions and debug platform limitations.
+- let the library track hardware results and build a submission payload with
+  `sdk.device.buildSummary()` (without performing HTTP requests).
 
 ## Install
 
@@ -88,7 +90,13 @@ Key rules the skill enforces:
   `CheckCameraWidget` / `CheckTouchscreenWidget` instead of custom UI;
 - public barrel import only (`package:rg_bridge/rg_bridge.dart`), except the
   documented temporary `CheckCameraWidget` import for older package versions;
-- one SDK instance per app;
+- one singleton SDK instance per app;
+- result persistence is handled by the library; host subscriptions are only
+  for UI updates;
+- camera/touchscreen can be created through the device widget factories and
+  are included automatically in the device session;
+- `buildSummary({resetSession: true})` returns the payload with `qrValue: null`
+  and resets the session after a successful build;
 - subscribe to `getResultStream` before `checkStart()`;
 - treat `REQUIRES_USER_ACTION` as intermediate;
 - branch on `result.status` / `status.wire`, never on localized `message`;

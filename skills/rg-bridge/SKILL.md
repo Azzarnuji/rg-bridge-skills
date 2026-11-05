@@ -34,10 +34,12 @@ Do not use for unrelated Flutter plugin work.
 1. Import only the public barrel: `package:rg_bridge/rg_bridge.dart`.
    Never import `package:rg_bridge/src/...` from app code — except the
    documented `CheckCameraWidget` fallback in rule 10.
-2. Create **one** `RGBridge` instance for the app (or per service), not one per
-   screen.
-3. Hardware results arrive only through `controller.getResultStream`.
-   Subscribe **before** `checkStart()`.
+2. Create **one** `RGBridge` instance for the app. `RGBridge` is a singleton;
+   the first construction fixes `baseUrl`, `clientId`, and locale.
+3. The library automatically tracks every result emitted by controllers created
+   through `sdk.device` and stores it in the device session. Host apps may still
+   subscribe to `controller.getResultStream` for UI, but must not manually save
+   results.
 4. `REQUIRES_USER_ACTION` is intermediate. Only act on
    `result.status.isTerminal`.
 5. Always `checkDispose()` device controllers in `dispose()`. Call
@@ -49,11 +51,11 @@ Do not use for unrelated Flutter plugin work.
 8. The legacy README shows outdated WebView signatures. Trust this skill and
    the source (`lib/src/addons/...`) over old docs.
 9. Every hardware test runs in its **own host-built screen**
-   (`Check<Test>Screen`). The screen owns creation, subscription, start, and
-   dispose of its controller. The only exception to host-built screens is
-   `camera` and `touchscreen`: both **must** render the library widgets
-   `CheckCameraWidget` / `CheckTouchscreenWidget` — never re-implement their
-   UI and never run those two tests controller-only.
+   (`Check<Test>Screen`). The screen owns the UI and controller lifecycle. The
+   library owns result persistence. The only exception to host-built screens is
+   `camera` and `touchscreen`: use `sdk.device.buildCameraWidget(...)` /
+   `sdk.device.buildTouchscreenWidget(...)`, which automatically register their
+   final result in the library session.
 10. `CheckCameraWidget` must come from the barrel. If the host's `rg_bridge`
    version predates its export, importing
    `package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart`
@@ -156,6 +158,32 @@ Never derive state by parsing `message`; read `status`, `testId`, and
 
 ## Device-test screens (required)
 
+The host may subscribe for presentation, but result persistence is automatic:
+
+```dart
+final camera = sdk.device.checkCamera();
+camera.getResultStream.listen((result) {
+  // Optional UI update only. Do not save the result manually.
+});
+camera.checkStart();
+```
+
+After the test flow, build the backend-ready payload without performing a
+network request:
+
+```dart
+final payload = await sdk.device.buildSummary();
+// payload contains qrValue: null, deviceInfo, tests, installedApps: [].
+await dio.post(endpoint, data: payload);
+```
+
+`buildSummary()` defaults to `resetSession: true`, so a successful summary
+build clears the tracked test state for the next inspection. Use
+`buildSummary(resetSession: false)` when the payload is only being previewed.
+
+The library also exposes `getTestResult(testId)` and
+`getAllTestResults()` for UI/debug inspection.
+
 Every test gets its own screen. The host builds the screen (route, layout,
 buttons); the screen owns the controller lifecycle.
 
@@ -178,7 +206,7 @@ class _CheckWifiScreenState extends State<CheckWifiScreen> {
   @override
   void initState() {
     super.initState();
-    // Subscribe BEFORE start.
+    // Optional UI subscription; the SDK tracks the result automatically.
     _sub = _controller.getResultStream.listen((result) {
       if (!mounted) return;
       if (!result.status.isTerminal) {
