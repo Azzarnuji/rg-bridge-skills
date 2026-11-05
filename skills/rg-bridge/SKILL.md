@@ -32,8 +32,10 @@ Do not use for unrelated Flutter plugin work.
 ## Non-negotiable rules
 
 1. Import only the public barrel: `package:rg_bridge/rg_bridge.dart`.
-   Never import `package:rg_bridge/src/...` from app code — except the
-   documented `CheckCameraWidget` fallback in rule 10.
+   Never import `package:rg_bridge/src/...` from app code. Camera and
+   touchscreen widgets are intentionally obtained from
+   `sdk.device.buildCameraWidget(...)` and
+   `sdk.device.buildTouchscreenWidget(...)`.
 2. Create **one** `RGBridge` instance for the app. `RGBridge` is a singleton;
    the first construction fixes `baseUrl`, `clientId`, and locale.
 3. The library automatically tracks every result emitted by controllers created
@@ -56,11 +58,9 @@ Do not use for unrelated Flutter plugin work.
    `camera` and `touchscreen`: use `sdk.device.buildCameraWidget(...)` /
    `sdk.device.buildTouchscreenWidget(...)`, which automatically register their
    final result in the library session.
-10. `CheckCameraWidget` must come from the barrel. If the host's `rg_bridge`
-   version predates its export, importing
-   `package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart`
-   is the single allowed `src/` exception; record it as temporary and upgrade
-   the package instead of copying the widget.
+10. Never construct `CheckCameraWidget` or `CheckTouchscreenWidget` directly.
+   Their constructors are not part of the public barrel because direct
+   construction bypasses automatic device-session result tracking.
 11. All device controller types are exported by the barrel, so typed controller
     variables may be used directly after importing
     `package:rg_bridge/rg_bridge.dart`. Never import controller files from
@@ -233,8 +233,8 @@ class _CheckWifiScreenState extends State<CheckWifiScreen> {
 
 | Widget | Test | Rule |
 |---|---|---|
-| `CheckCameraWidget` | `camera` | **Mandatory.** Host pushes it as a route. |
-| `CheckTouchscreenWidget` | `touchscreen` | **Mandatory.** Host pushes it as a route. |
+| `sdk.device.buildCameraWidget()` | `camera` | **Mandatory.** Host pushes it as a route. |
+| `sdk.device.buildTouchscreenWidget()` | `touchscreen` | **Mandatory.** Host pushes it as a route. |
 | `TakePhotoQrWidget` | QR photo | QR surface, not a hardware test. |
 
 All other tests are **host-built screens**: the host writes the UI and calls the
@@ -243,20 +243,20 @@ controller notifiers (`checkVerifyGuess`, `checkNotify*`, ...).
 `WidgetsBindingObserver`); the library ships no navigation screen.
 
 ```dart
-// camera — do not rebuild this UI yourself
+// camera — factory required; do not construct the widget directly
 final result = await Navigator.of(context).push<DeviceTestResult>(
   MaterialPageRoute(
-    builder: (_) => CheckCameraWidget(
+    builder: (_) => sdk.device.buildCameraWidget(
       checkIsFront: false,
       onCheckFinished: (r) => Navigator.of(context).pop(r),
     ),
   ),
 );
 
-// touchscreen — do not rebuild this UI yourself
+// touchscreen — factory required; do not construct the widget directly
 final result = await Navigator.of(context).push<DeviceTestResult>(
   MaterialPageRoute(
-    builder: (_) => CheckTouchscreenWidget(
+    builder: (_) => sdk.device.buildTouchscreenWidget(
       columns: 15,
       rows: 26,
       timeout: const Duration(seconds: 60),

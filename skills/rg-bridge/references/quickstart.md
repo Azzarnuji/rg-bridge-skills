@@ -41,9 +41,10 @@ import 'package:rg_bridge/rg_bridge.dart';
 ```
 
 The barrel exports `RGBridge`, enums, models, localization
-(`RgBridgeLocale`, `RgBridgeI18n`, `RgBridgeStrings`), and the widgets
-`CheckTouchscreenWidget`, `TakePhotoQrWidget`, and — when the installed version
-includes it — `CheckCameraWidget`.
+(`RgBridgeLocale`, `RgBridgeI18n`, `RgBridgeStrings`), and QR widgets.
+Camera and touchscreen test widgets are created through
+`sdk.device.buildCameraWidget(...)` and
+`sdk.device.buildTouchscreenWidget(...)` so results are tracked automatically.
 All device controller types are exported by the public barrel, so they can be
 used for explicit typing without separate imports:
 
@@ -56,10 +57,7 @@ late final CheckGpsController controller;
 Controller types are also returned through `sdk.device.*`; do not import their
 files directly.
 
-Never import `src/`, with one documented exception: if the host's `rg_bridge`
-version does not export `CheckCameraWidget` yet, import
-`package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart`
-temporarily and upgrade the package instead of copying the widget.
+Never import `src/` or construct the camera/touchscreen widgets directly.
 
 Every hardware test runs in its own host-built screen. `camera` and
 `touchscreen` are the exception: they must use the library widgets above.

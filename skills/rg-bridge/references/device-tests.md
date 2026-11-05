@@ -235,7 +235,7 @@ countdown → capture → size validation → rear-camera flash question).
 ```dart
 final result = await Navigator.of(context).push<DeviceTestResult>(
   MaterialPageRoute(
-    builder: (_) => CheckCameraWidget(
+    builder: (_) => sdk.device.buildCameraWidget(
       checkIsFront: false,
       initTimeout: const Duration(seconds: 15),
       onCheckFinished: (r) => Navigator.of(context).pop(r),
@@ -249,11 +249,9 @@ through `checkCamera()` when the widget is available. Controller-only runs are
 headless: they capture and delete a temp file without the preview/countdown
 contract, so they do not satisfy this test.
 
-If the host's `rg_bridge` version does not export `CheckCameraWidget` from the
-barrel yet, importing
-`package:rg_bridge/src/addons/device/check_camera/check_camera_widget.dart` is
-the only allowed `src/` exception. Record it as temporary and upgrade instead of
-copying the widget.
+Do not construct or import `CheckCameraWidget` directly. Use
+`sdk.device.buildCameraWidget(...)` so the result is tracked by the device
+session.
 
 ### Flashlight
 
@@ -375,7 +373,7 @@ void didChangeAppLifecycleState(AppLifecycleState state) {
 ```dart
 final result = await Navigator.of(context).push<DeviceTestResult>(
   MaterialPageRoute(
-    builder: (_) => CheckTouchscreenWidget(
+    builder: (_) => sdk.device.buildTouchscreenWidget(
       columns: 15,
       rows: 26,
       timeout: const Duration(seconds: 60),
