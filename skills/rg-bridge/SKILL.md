@@ -1,11 +1,11 @@
 ---
 name: rg-bridge
-description: Use when integrating or debugging the rg_bridge Flutter SDK (RGBridge) — device info, 16 hardware tests (touchscreen, sensors, camera, mic, GPS, WiFi, Bluetooth, biometric, buttons), the WebView JS bridge, form submission, desk inbox, and QR take-photo file transfer. Covers initialization, Indonesian/English localization (RgBridgeLocale), one-screen-per-test structure, the mandatory camera/touchscreen library widgets, controller lifecycle, result streams, REQUIRES_USER_ACTION, permissions, and troubleshooting.
+description: Use when integrating or debugging the rg_bridge Flutter SDK (RGBridge) — device info, 16 hardware tests (touchscreen, sensors, camera, mic, GPS, WiFi, Bluetooth, biometric, buttons), the WebView JS bridge, form submission, desk inbox, QR take-photo file transfer, and scan-diagnostic transaction submission/accept. Covers initialization, Indonesian/English localization (RgBridgeLocale), one-screen-per-test structure, the mandatory camera/touchscreen library widgets, controller lifecycle, result streams, REQUIRES_USER_ACTION, permissions, and troubleshooting.
 ---
 
 # RGBridge Flutter SDK
 
-`rg_bridge` is a Flutter package that exposes three public surfaces on one
+`rg_bridge` is a Flutter package that exposes public surfaces on one
 `RGBridge` instance:
 
 | Surface | Access | Needs `baseUrl` | Purpose |
@@ -15,6 +15,7 @@ description: Use when integrating or debugging the rg_bridge Flutter SDK (RGBrid
 | Form | `sdk.formSubmission` | Yes | Init session + submit form |
 | Desk | `sdk.desk` | Yes | Customer inbox URL |
 | QR | `sdk.qr` | Yes | Take-photo QR + file transfer |
+| Transaction | `sdk.transaction` | Yes | Submit scan result + accept request |
 
 ## When to use this skill
 
@@ -25,6 +26,7 @@ Use for any task that:
 - localizes SDK text to Indonesian/English or switches language at runtime;
 - builds a WebView flow backed by an rg_bridge session;
 - submits an rg_bridge form, creates a desk inbox, or starts a take-photo QR;
+- submits a scan-diagnostic result and accepts the inspection request;
 - debugs `NOT_SUPPORTED`, timeouts, missing events, or dispose issues.
 
 Do not use for unrelated Flutter plugin work.
@@ -84,6 +86,10 @@ Do not use for unrelated Flutter plugin work.
    `message` are **never translated**; `testId` and `action.type` stay
    untranslated too. Never parse the localized `message` for app logic — use
    `status`.
+15. Use only `sdk.transaction.*` for scan-diagnostic transactions. The
+    transaction `httpClient` is private by design; never expose or try to access
+    `sdk.transaction.deviceSubmission.httpClient`, and never import
+    `package:rg_bridge/src/addons/transaction/...`.
 
 ## Install and initialize
 
@@ -117,8 +123,8 @@ final sdk = RGBridge(
 );
 ```
 
-Device-only code may omit `baseUrl`. WebView, Form, Desk, and QR require a
-valid `baseUrl` + `clientId`.
+Device-only code may omit `baseUrl`. WebView, Form, Desk, QR, and Transaction
+require a valid `baseUrl` + `clientId`.
 
 ## Localization (Indonesian / English)
 
@@ -349,6 +355,27 @@ sdk.qr.photo.onFileReceived.listen((file) { /* ReceivedFile */ });
 // or: TakePhotoQrWidget(url: info.url, size: 220)
 ```
 
+## Transaction in one glance
+
+```dart
+// Submit the scan result (payload from device.buildSummary())
+final submit = await sdk.transaction.deviceSubmission.execute(
+  await sdk.device.buildSummary(),
+  args: DeviceSubmissionArgs(includePricing: true),
+);
+
+// Keep submit.reequesCode, then mark the request completed
+final accept = await sdk.transaction.deviceSubmissionAccept.execute(
+  args: DeviceSubmissionAcceptArgs(requestCode: submit.reequesCode),
+);
+// accept.status -> COMPLETED
+```
+
+`DeviceSubmissionModel` exposes `result`, `message`, `requestId`,
+`reequesCode`, and `pricing` (`priceMin`, `priceMax`, `message`). Parsing
+accepts snake_case/camelCase, numeric strings, and missing pricing. Catch
+`HttpValidationException` (HTTP 422) separately from network/non-2xx errors.
+
 ## Reference routing
 
 Read the matching file before writing non-trivial code:
@@ -359,6 +386,7 @@ Read the matching file before writing non-trivial code:
 | All `get*` info APIs, the 16 `check*` tests, the required screen-per-test table, and the mandatory camera/touchscreen widgets | `references/device-tests.md` |
 | WebView API, events, channels, HTML loading, permissions | `references/webview.md` |
 | Form model contract, desk inbox, QR streams and teardown | `references/form-desk-qr.md` |
+| Transaction submit + accept, models, errors, security | `references/transaction.md` |
 | Errors, emulator/iOS limitations, debug checklist | `references/troubleshooting.md` |
 
 ## Verification

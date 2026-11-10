@@ -29,6 +29,8 @@ It teaches coding agents how to:
   `DeviceTestResult` / `REQUIRES_USER_ACTION`;
 - build the WebView session + JS bridge flow;
 - submit forms, create desk inboxes, and receive take-photo files over QR;
+- submit scan-diagnostic results and accept the inspection request via
+  `sdk.transaction`;
 - handle permissions and debug platform limitations.
 - let the library track hardware results and build a submission payload with
   `sdk.device.buildSummary()` (without performing HTTP requests).
@@ -73,6 +75,7 @@ skills/rg-bridge/
     ├── device-tests.md           # get* APIs + 16 check* tests
     ├── webview.md                # session, controller, events, HTML
     ├── form-desk-qr.md           # form, desk inbox, QR file transfer
+    ├── transaction.md            # scan-diagnostic submit + accept
     └── troubleshooting.md        # errors, emulator/iOS limits, checklist
 ```
 
@@ -102,6 +105,8 @@ Key rules the skill enforces:
 - branch on `result.status` / `status.wire`, never on localized `message`;
   status tokens and `testId` / `action.type` are not translated;
 - dispose controllers and unregister WebView events;
+- use only `sdk.transaction.*`; the transaction `httpClient` is private and must
+  stay inaccessible to the host app;
 - never commit real `clientId` values or log tokens/PII.
 
 ## License

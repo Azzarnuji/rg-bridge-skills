@@ -136,7 +136,7 @@ only affects messages emitted after the change.
 
 ```text
 Create RGBridge
-  → use device / webview / form / desk / qr
+  → use device / webview / form / desk / qr / transaction
   → handle result / event
   → cleanup listener + controller
   → screen/flow done
@@ -232,4 +232,4 @@ lib/
 4. One test stream emits a terminal result.
 5. A result `message` uses the expected locale while `status.wire` stays
    `PASS` / `FAILED` / ... .
-6. Only then wire WebView/Form with a valid `baseUrl` + `clientId`.
+6. Only then wire WebView/Form/Transaction with a valid `baseUrl` + `clientId`.
