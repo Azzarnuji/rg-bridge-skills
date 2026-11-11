@@ -53,7 +53,7 @@ Do not use for unrelated Flutter plugin work.
 7. Never hardcode real `clientId` values in committed code or docs; use
    placeholders / `String.fromEnvironment`.
 8. The legacy README shows outdated WebView signatures. Trust this skill and
-   the source (`lib/src/addons/...`) over old docs.
+   the source (`lib/src/addons/...`, `lib/src/support/...`) over old docs.
 9. Every hardware test runs in its **own host-built screen**
    (`Check<Test>Screen`). The screen owns the UI and controller lifecycle. The
    library owns result persistence. The only exception to host-built screens is
