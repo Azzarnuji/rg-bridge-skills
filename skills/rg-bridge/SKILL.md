@@ -74,12 +74,14 @@ Do not use for unrelated Flutter plugin work.
     `NSMotionUsageDescription`, `NSBluetoothAlwaysUsageDescription`. iOS does
     not merge package plists; a missing motion/Bluetooth key crashes the app.
     On Android, `MainActivity` must extend `FlutterFragmentActivity`.
-13. QR take-photo device labels must be read from the library:
-   `await sdk.device.getDeviceDisplayInfo()` then pass `deviceName` /
-   `deviceDetail` to `sdk.qr.photo.show(...)`. Never hardcode a device name or
-   detail (no `'Apple iPhone 13'`, no `'128 GB • Purple'`) and never invent the
-   photo count — `sessionCode`, `photoSteps`, and `maxFiles` come from the
-   server response.
+13. Device labels must be read from the library everywhere they are shown —
+   not just QR take-photo: `await sdk.device.getDeviceDisplayInfo()` then
+   pass `deviceName` / `deviceDetail` to whatever consumes them (e.g.
+   `sdk.qr.photo.show(...)`, device-check screens, info/debug cards, share
+   summaries). Never hardcode a device name or detail (no
+   `'Apple iPhone 13'`, no `'128 GB • Purple'`). Never invent the photo
+   count — `sessionCode`, `photoSteps`, and `maxFiles` come from the server
+   response.
 14. Treat `result.status` / `status.wire` as the machine contract. Localization
    changes only user-facing descriptive text. Status tokens (`PASS`, `FAILED`,
    `SKIPPED`, `NOT_SUPPORTED`, `REQUIRES_USER_ACTION`) and any status prefix in

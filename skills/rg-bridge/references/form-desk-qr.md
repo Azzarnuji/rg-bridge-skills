@@ -100,8 +100,9 @@ final info = await sdk.qr.photo.show(
 
 `getDeviceDisplayInfo()` returns `CheckDeviceDisplayInfo { deviceName,
 deviceDetail }`, derived from device info + storage (e.g. `samsung SM-A525F`
-and `116 GB • Android`). This is the only accepted source for the take-photo
-device card.
+and `116 GB • Android`). This is the only accepted source — and it is the
+same single source for every device label in the app, not just the take-photo
+card.
 
 `show()` posts `type: 'take-photo'`, `channel: 'browser'`, optional
 `session_id`, and `meta.device_name` / `meta.device_detail`, then connects the

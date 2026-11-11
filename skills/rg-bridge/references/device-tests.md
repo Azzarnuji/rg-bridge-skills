@@ -29,14 +29,19 @@ that survives calls.
 
 `getDeviceInfo` never throws; plugin failures fall back to `Platform.*`.
 
-For UI labels (e.g. the take-photo "Perangkat" card) use the library helper
-instead of hardcoding:
+For **any** UI label that shows the device name or detail — the take-photo
+"Perangkat" card, device-check screens, info/debug cards, share summaries —
+use the library helper instead of hardcoding:
 
 ```dart
 final display = await sdk.device.getDeviceDisplayInfo();
 // display.deviceName   → 'samsung SM-A525F'
 // display.deviceDetail → '116 GB • Android'
 ```
+
+`getDeviceDisplayInfo()` is the **single source of truth** for device labels.
+Pass `display.deviceName` / `display.deviceDetail` into every screen or API
+that displays them (e.g. `sdk.qr.photo.show(...)`); never invent the values.
 
 `CheckDeviceDisplayInfo { deviceName, deviceDetail }` is derived from device
 info + storage.
