@@ -100,7 +100,8 @@ final info = await sdk.qr.photo.show(
 
 `getDeviceDisplayInfo()` returns `CheckDeviceDisplayInfo { deviceName,
 deviceDetail }`, derived from device info + storage (e.g. `samsung SM-A525F`
-and `116 GB • Android`). This is the only accepted source — and it is the
+and `128 GB • Android`; the ROM label is snapped to a standard capacity).
+This is the only accepted source — and it is the
 same single source for every device label in the app, not just the take-photo
 card.
 

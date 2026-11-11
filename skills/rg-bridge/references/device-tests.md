@@ -36,7 +36,7 @@ use the library helper instead of hardcoding:
 ```dart
 final display = await sdk.device.getDeviceDisplayInfo();
 // display.deviceName   → 'samsung SM-A525F'
-// display.deviceDetail → '116 GB • Android'
+// display.deviceDetail → '128 GB • Android'  (ROM snapped to standard capacity)
 ```
 
 `getDeviceDisplayInfo()` is the **single source of truth** for device labels.
