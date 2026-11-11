@@ -12,7 +12,7 @@ sdk.device.buildSummary()
 sdk.transaction.deviceSubmission.execute(payload, args)
         │
         ▼
-DeviceSubmissionModel (requestId, reequesCode, pricing)
+DeviceSubmissionModel (requestId, requestCode, pricing)
         │
         ▼
 sdk.transaction.deviceSubmissionAccept.execute(args: requestCode)
@@ -55,18 +55,34 @@ tracked test session after building unless `resetSession: false`.
 | `result` | `bool` | Backend success flag |
 | `message` | `String` | Backend message |
 | `requestId` | `String` | `request_id` |
-| `reequesCode` | `String` | `request_code`; keep it for accept |
+| `requestCode` | `String` | `request_code`; keep it for accept |
 | `pricing` | `DeviceSubmissionPricingModel` | Empty when pricing is not requested |
 
 `DeviceSubmissionPricingModel`: `priceMin` (`int`), `priceMax` (`int`),
 `message` (`String`). `DeviceSubmissionPricingModel.empty` is used when the
 backend omits `pricing` or sends `null`.
 
+## Serialization
+
+Response models expose `toJson()` in the backend's snake_case shape, so
+`Model.fromJson(model.toJson())` round-trips:
+
+- `DeviceSubmissionPricingModel.toJson()` →
+  `{price_min, price_max, message}`
+- `DeviceSubmissionModel.toJson()` →
+  `{result, message, request_id, request_code, pricing}`
+- `DeviceSubmissionAcceptModel.toJson()` →
+  `{result, message, request_id, request_code, status}`
+
+`DeviceSubmissionArgs` / `DeviceSubmissionAcceptArgs` are request options
+(`includePricing` is a query param, `requestCode` is a path param) — they are
+not wire models and have no `toJson()`.
+
 ## Accept the request
 
 ```dart
 final accept = await sdk.transaction.deviceSubmissionAccept.execute(
-  args: DeviceSubmissionAcceptArgs(requestCode: result.reequesCode),
+  args: DeviceSubmissionAcceptArgs(requestCode: result.requestCode),
 );
 ```
 
@@ -77,13 +93,13 @@ Future<DeviceSubmissionAcceptModel> execute({
 ```
 
 `DeviceSubmissionAcceptArgs { requestCode }` comes from
-`DeviceSubmissionModel.reequesCode`.
+`DeviceSubmissionModel.requestCode`.
 
 Endpoint: `PATCH {baseUrl}/api/scan-diagnostic-myrg/<requestCode>` with body
 `{"status": "COMPLETED"}`.
 
 `DeviceSubmissionAcceptModel`: `result` (`bool`), `message` (`String`),
-`requestId` (`String`), `reequesCode` (`String`), and `status` (`String`,
+`requestId` (`String`), `requestCode` (`String`), and `status` (`String`,
 usually `COMPLETED`).
 
 ## Parsing contract
@@ -112,7 +128,7 @@ try {
     args: DeviceSubmissionArgs(includePricing: true),
   );
   await sdk.transaction.deviceSubmissionAccept.execute(
-    args: DeviceSubmissionAcceptArgs(requestCode: result.reequesCode),
+    args: DeviceSubmissionAcceptArgs(requestCode: result.requestCode),
   );
 } on HttpValidationException catch (e) {
   // Show e.fieldMessage, not only e.message.
@@ -137,5 +153,5 @@ try {
 | Submit 401/403 | Wrong `clientId` for `baseUrl` |
 | HTTP 422 on submit | Payload does not match the backend contract; show `fieldMessage` |
 | `pricing` is zero | `includePricing: false` or backend returned no pricing |
-| Accept fails | `requestCode` must be the submit response's `reequesCode` |
+| Accept fails | `requestCode` must be the submit response's `requestCode` |
 | Tests cleared unexpectedly | `buildSummary()` defaults to `resetSession: true` |

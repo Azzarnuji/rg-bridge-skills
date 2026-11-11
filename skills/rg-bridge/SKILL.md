@@ -364,17 +364,19 @@ final submit = await sdk.transaction.deviceSubmission.execute(
   args: DeviceSubmissionArgs(includePricing: true),
 );
 
-// Keep submit.reequesCode, then mark the request completed
+// Keep submit.requestCode, then mark the request completed
 final accept = await sdk.transaction.deviceSubmissionAccept.execute(
-  args: DeviceSubmissionAcceptArgs(requestCode: submit.reequesCode),
+  args: DeviceSubmissionAcceptArgs(requestCode: submit.requestCode),
 );
 // accept.status -> COMPLETED
 ```
 
 `DeviceSubmissionModel` exposes `result`, `message`, `requestId`,
-`reequesCode`, and `pricing` (`priceMin`, `priceMax`, `message`). Parsing
-accepts snake_case/camelCase, numeric strings, and missing pricing. Catch
-`HttpValidationException` (HTTP 422) separately from network/non-2xx errors.
+`requestCode`, and `pricing` (`priceMin`, `priceMax`, `message`). Parsing
+accepts snake_case/camelCase, numeric strings, and missing pricing. Response
+models also expose snake_case `toJson()` so `fromJson(model.toJson())`
+round-trips. Catch `HttpValidationException` (HTTP 422) separately from
+network/non-2xx errors.
 
 ## Reference routing
 
