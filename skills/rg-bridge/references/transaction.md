@@ -12,7 +12,7 @@ sdk.device.buildSummary()
 sdk.transaction.deviceSubmission.execute(payload, args)
         │
         ▼
-DeviceSubmissionModel (requestId, requestCode, pricing)
+DeviceSubmissionModel (requestId, requestCode, pricing, hdc)
         │
         ▼
 sdk.transaction.deviceSubmissionAccept.execute(args: requestCode)
@@ -57,10 +57,24 @@ tracked test session after building unless `resetSession: false`.
 | `requestId` | `String` | `request_id` |
 | `requestCode` | `String` | `request_code`; keep it for accept |
 | `pricing` | `DeviceSubmissionPricingModel` | Empty when pricing is not requested |
+| `hdc` | `DeviceSubmissionHdcModel` | HDC info; empty when backend omits `hdc` |
 
 `DeviceSubmissionPricingModel`: `priceMin` (`int`), `priceMax` (`int`),
 `message` (`String`). `DeviceSubmissionPricingModel.empty` is used when the
 backend omits `pricing` or sends `null`.
+
+`DeviceSubmissionHdcModel`:
+
+| Field | Type | Wire key | Note |
+|---|---|---|---|
+| `value` | `bool` | `value` | Boolean-normalized |
+| `reason` | `String` | `reason` | Missing/`null` → `''` |
+| `chipsetApi` | `String` | `chipset_api` / `chipsetApi` | Missing/`null` → `''` |
+| `chipsetDevice` | `String` | `chipset_device` / `chipsetDevice` | Missing/`null` → `''` |
+
+`DeviceSubmissionHdcModel.empty` is used when the top-level `hdc` is absent or
+`null`. A present-but-partial `hdc` object is safe: each missing/`null` field
+falls back to its default (`false` / `''`).
 
 ## Serialization
 
@@ -69,8 +83,10 @@ Response models expose `toJson()` in the backend's snake_case shape, so
 
 - `DeviceSubmissionPricingModel.toJson()` →
   `{price_min, price_max, message}`
+- `DeviceSubmissionHdcModel.toJson()` →
+  `{value, reason, chipset_api, chipset_device}`
 - `DeviceSubmissionModel.toJson()` →
-  `{result, message, request_id, request_code, pricing}`
+  `{result, message, request_id, request_code, pricing, hdc}`
 - `DeviceSubmissionAcceptModel.toJson()` →
   `{result, message, request_id, request_code, status}`
 
@@ -109,7 +125,11 @@ usually `COMPLETED`).
 - numbers may arrive as `int`, `double`, or `String` (`"1500000.00"` →
   `1500000`);
 - booleans accept `true`, `"true"`, `1`, `"1"`, `"yes"`, `"success"`;
-- a missing/`null` `pricing` becomes `DeviceSubmissionPricingModel.empty`.
+- a missing/`null` `pricing` becomes `DeviceSubmissionPricingModel.empty`;
+- a missing/`null` top-level `hdc` becomes `DeviceSubmissionHdcModel.empty`;
+- inside `hdc`, `value` is boolean-normalized and missing/`null`
+  `reason`/`chipsetApi`/`chipsetDevice` become `''`; HDC also accepts the
+  camelCase `chipsetApi`/`chipsetDevice` keys.
 
 ## Error handling
 

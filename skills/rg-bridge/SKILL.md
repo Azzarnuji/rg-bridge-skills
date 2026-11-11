@@ -372,11 +372,14 @@ final accept = await sdk.transaction.deviceSubmissionAccept.execute(
 ```
 
 `DeviceSubmissionModel` exposes `result`, `message`, `requestId`,
-`requestCode`, and `pricing` (`priceMin`, `priceMax`, `message`). Parsing
-accepts snake_case/camelCase, numeric strings, and missing pricing. Response
-models also expose snake_case `toJson()` so `fromJson(model.toJson())`
-round-trips. Catch `HttpValidationException` (HTTP 422) separately from
-network/non-2xx errors.
+`requestCode`, `pricing` (`priceMin`, `priceMax`, `message`), and `hdc`
+(`value`, `reason`, `chipsetApi`, `chipsetDevice`). Parsing accepts
+snake_case/camelCase, numeric strings, and missing pricing; `hdc` is
+defensive too (missing object/fields fall back to
+`DeviceSubmissionHdcModel.empty` / defaults). Response models also expose
+snake_case `toJson()`
+so `fromJson(model.toJson())` round-trips. Catch `HttpValidationException`
+(HTTP 422) separately from network/non-2xx errors.
 
 ## Reference routing
 
