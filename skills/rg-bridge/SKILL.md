@@ -373,7 +373,8 @@ final accept = await sdk.transaction.deviceSubmissionAccept.execute(
 
 `DeviceSubmissionModel` exposes `result`, `message`, `requestId`,
 `requestCode`, `pricing` (`priceMin`, `priceMax`, `message`), and `hdc`
-(`value`, `reason`, `chipsetApi`, `chipsetDevice`). Parsing accepts
+(`value`, `reason`, `chipsetApi`, `chipsetDevice`). `hdc.value == true` means
+the device **is** an HDC device; `false` means it is **not**. Parsing accepts
 snake_case/camelCase, numeric strings, and missing pricing; `hdc` is
 defensive too (missing object/fields fall back to
 `DeviceSubmissionHdcModel.empty` / defaults). Response models also expose

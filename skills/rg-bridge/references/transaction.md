@@ -67,14 +67,19 @@ backend omits `pricing` or sends `null`.
 
 | Field | Type | Wire key | Note |
 |---|---|---|---|
-| `value` | `bool` | `value` | Boolean-normalized |
+| `value` | `bool` | `value` | `true` = device **is** HDC; `false` = device is **not** HDC |
 | `reason` | `String` | `reason` | Missing/`null` → `''` |
 | `chipsetApi` | `String` | `chipset_api` / `chipsetApi` | Missing/`null` → `''` |
 | `chipsetDevice` | `String` | `chipset_device` / `chipsetDevice` | Missing/`null` → `''` |
 
+`hdc.value` is the HDC verdict: `true` means the device is an HDC device,
+`false` means it is not. Branch on `hdc.value`; never infer HDC status from
+`reason` or the chipset fields.
+
 `DeviceSubmissionHdcModel.empty` is used when the top-level `hdc` is absent or
 `null`. A present-but-partial `hdc` object is safe: each missing/`null` field
-falls back to its default (`false` / `''`).
+falls back to its default (`false` / `''`), so `empty.value == false` means
+"not HDC / no HDC information".
 
 ## Serialization
 
